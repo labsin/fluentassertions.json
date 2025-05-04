@@ -966,6 +966,35 @@ namespace FluentAssertions.Json.Specs
                 .WithInnerException<JsonReaderException>();
         }
 
+        [Fact]
+        public void When_a_float_is_within_approximation_ContainSubtree_check_should_succeed()
+        {
+            // Arrange
+            var actual = JToken.Parse("{ \"id\": 1.1232 }");
+            var expected = JToken.Parse("{ \"id\": 1.1235 }");
+
+            // Act & Assert
+            actual.Should().ContainSubtree(expected, options => options
+                .Using<double>(d => d.Subject.Should().BeApproximately(d.Expectation, 1e-3))
+                .WhenTypeIs<double>());
+        }
+
+        [Fact]
+        public void When_a_float_is_not_within_approximation_ContainSubtree_check_should_throw()
+        {
+            // Arrange
+            var actual = JToken.Parse("{ \"id\": 1.1232 }");
+            var expected = JToken.Parse("{ \"id\": 1.1235 }");
+
+            // Act & Assert
+            actual.Should().
+                Invoking(x => x.ContainSubtree(expected, options => options
+                    .Using<double>(d => d.Subject.Should().BeApproximately(d.Expectation, 1e-5))
+                    .WhenTypeIs<double>()))
+                .Should().Throw<XunitException>()
+                .WithMessage("JSON document has a different value at $.id.*");
+        }
+
         #endregion
 
         private static string Format(JToken value, bool useLineBreaks = false)

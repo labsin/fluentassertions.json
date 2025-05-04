@@ -27,7 +27,7 @@ namespace FluentAssertions.Json
         ///     Initializes a new instance of the <see cref="JTokenAssertions" /> class.
         /// </summary>
         /// <param name="subject">The subject</param>
-        /// <param name="orCreate"></param>
+        /// <param name="assertionChain">The assertion chain</param>
         public JTokenAssertions(JToken subject, AssertionChain assertionChain)
             : base(subject, assertionChain)
         {
@@ -494,6 +494,41 @@ namespace FluentAssertions.Json
         public AndConstraint<JTokenAssertions> ContainSubtree(JToken subtree, string because = "", params object[] becauseArgs)
         {
             return BeEquivalentTo(subtree, true, options => options, because, becauseArgs);
+        }
+
+        /// <summary>
+        ///     Recursively asserts that the current <see cref="JToken"/> contains at least the properties or elements of the specified <paramref name="subtree"/>.
+        /// </summary>
+        /// <param name="subtree">The subtree to search for</param>
+        /// <param name="config">The options to consider while asserting values</param>
+        /// <param name="because">
+        /// A formatted phrase as is supported by <see cref="string.Format(string,object[])" /> explaining why the assertion
+        /// is needed. If the phrase does not start with the word <i>because</i>, it is prepended automatically.
+        /// </param>
+        /// <param name="becauseArgs">
+        /// Zero or more objects to format using the placeholders in <see cref="because" />.
+        /// </param>
+        /// <remarks>Use this method to match the current <see cref="JToken"/> against an arbitrary subtree,
+        /// permitting it to contain any additional properties or elements. This way we can test multiple properties on a <see cref="JObject"/> at once,
+        /// or test if a <see cref="JArray"/> contains any items that match a set of properties, assert that a JSON document has a given shape, etc. </remarks>
+        /// <example>
+        /// This example asserts the values of multiple properties of a child object within a JSON document.
+        /// <code>
+        /// var json = JToken.Parse("{ success: true, data: { id: 123, type: 'my-type', name: 'Noone' } }");
+        /// json.Should().ContainSubtree(JToken.Parse("{ success: true, data: { type: 'my-type', name: 'Noone' } }"));
+        /// </code>
+        /// </example>
+        /// <example>This example asserts that a <see cref="JArray"/> within a <see cref="JObject"/> has at least one element with at least the given properties</example>
+        /// <code>
+        /// var json = JToken.Parse("{ id: 1, items: [ { id: 2, type: 'my-type', name: 'Alpha' }, { id: 3, type: 'other-type', name: 'Bravo' } ] }");
+        /// json.Should().ContainSubtree(JToken.Parse("{ items: [ { type: 'my-type', name: 'Alpha' } ] }"));
+        /// </code>
+        public AndConstraint<JTokenAssertions> ContainSubtree(JToken subtree,
+            Func<IJsonAssertionOptions<object>, IJsonAssertionOptions<object>> config,
+            string because = "",
+            params object[] becauseArgs)
+        {
+            return BeEquivalentTo(subtree, true, config, because, becauseArgs);
         }
 
 #pragma warning disable CA1822 // Making this method static is a breaking chan
