@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using FluentAssertions.Equivalency;
+using FluentAssertions.Equivalency.Tracing;
 using FluentAssertions.Execution;
 using Newtonsoft.Json.Linq;
 
@@ -9,14 +11,15 @@ namespace FluentAssertions.Json
     internal class JTokenDifferentiator
     {
         private readonly bool ignoreExtraProperties;
-
-        private readonly Func<IJsonAssertionOptions<object>, IJsonAssertionOptions<object>> config;
+        private readonly JValueEquivalencyValidator equivalencyValidator;
 
         public JTokenDifferentiator(bool ignoreExtraProperties,
             Func<IJsonAssertionOptions<object>, IJsonAssertionOptions<object>> config)
         {
             this.ignoreExtraProperties = ignoreExtraProperties;
-            this.config = config;
+            // Let's cache an options instance, so we don't create a new one for each invocation of BeEquivalentTo
+            var options = (JsonAssertionOptions<object>)config.Invoke(new JsonAssertionOptions<object>(AssertionConfiguration.Current.Equivalency.CloneDefaults<object>()));
+            this.equivalencyValidator = new JValueEquivalencyValidator(options);
         }
 
         public Difference FindFirstDifference(JToken actual, JToken expected)
@@ -214,20 +217,12 @@ namespace FluentAssertions.Json
                 return new Difference(DifferenceKind.OtherType, path, Describe(actual.Type), Describe(expected.Type));
             }
 
-            bool hasMismatches;
-            using (var scope = new AssertionScope())
-            {
-                actual.Value.Should().BeEquivalentTo(expected.Value, options =>
-                    (JsonAssertionOptions<object>)config.Invoke(new JsonAssertionOptions<object>(options)));
-
-                hasMismatches = scope.Discard().Length > 0;
-            }
-
-            if (hasMismatches)
+            using var scope = new AssertionScope();
+            equivalencyValidator.AssertEquality(actual, expected);
+            if (scope.Discard().Length > 0)
             {
                 return new Difference(DifferenceKind.OtherValue, path);
             }
-
             return null;
         }
 
