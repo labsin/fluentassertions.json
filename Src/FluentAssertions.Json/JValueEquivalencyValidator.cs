@@ -77,6 +77,11 @@ namespace FluentAssertions.Json
             public bool IsCyclicReference(object expectation) => false;
         }
 
+        /// <summary>
+        /// Helpers to access implementations that are not possible to implement external to FluentAssertions library.
+        /// Node cause INode cannot be implemented cause of an internal setter.
+        /// Tracer cause it has an internal constructor and is needed for the IEquivalencyValidationContext as some validation expect it to not be null.
+        /// </summary>
         private static class ReflectionHelpers
         {
             private static readonly Type nodeType;
@@ -90,6 +95,10 @@ namespace FluentAssertions.Json
                 tracerConstructor = typeof(Tracer).GetConstructor(BindingFlags.Instance | BindingFlags.NonPublic, null, CallingConventions.HasThis, new[] { typeof(INode), typeof(ITraceWriter) }, null);
             }
 
+            /// <summary>
+            /// Create a root Node.
+            /// </summary>
+            /// <remarks>Needs reflection cause cause INode cannot be implemented cause of an internal setter.</remarks>
             public static INode CreateRootNode()
             {
                 var node = (INode)Activator.CreateInstance(nodeType);
@@ -97,6 +106,11 @@ namespace FluentAssertions.Json
                 return node;
             }
 
+            /// <summary>
+            /// Create a tracer that does nothing.
+            /// </summary>
+            /// <param name="node">The not to point to</param>
+            /// <remarks>Needed cause it has an internal constructor and is needed for the IEquivalencyValidationContext as some validation expect it to not be null</remarks>
             public static Tracer CreateEmptyTracer(INode node)
             {
                 return (Tracer)tracerConstructor.Invoke(new[] { node, null });
