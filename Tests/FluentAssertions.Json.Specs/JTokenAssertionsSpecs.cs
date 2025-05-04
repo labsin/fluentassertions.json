@@ -420,6 +420,27 @@ namespace FluentAssertions.Json.Specs
                 .WithMessage(expectedMessage);
         }
 
+        [Fact]
+        public void When_the_object_has_many_values_and_there_are_options_supplied_the_operation_should_not_take_seconds()
+        {
+            // Arrange
+            const double precision = 1e-3;
+            const double delta = 1e-4; // lower than precision
+            const int count = 1_000;
+            JArray actual = new();
+            JArray expected = new();
+            for (int i = 0; i < count; i++)
+            {
+                actual.Add(new JObject(new JProperty("value", i + delta)));
+                expected.Add(new JObject(new JProperty("value", (double)i)));
+            }
+
+            // Act & Assert
+            actual.Should().BeEquivalentTo(expected, options => options
+                .Using<double>(d => d.Subject.Should().BeApproximately(d.Expectation, precision))
+                .WhenTypeIs<double>());
+        }
+
         #endregion (Not)BeEquivalentTo
 
         #region (Not)HaveValue
