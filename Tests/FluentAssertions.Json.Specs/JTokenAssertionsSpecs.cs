@@ -967,7 +967,7 @@ namespace FluentAssertions.Json.Specs
         }
 
         [Fact]
-        public void When_a_float_is_within_approximation_ContainSubtree_check_should_succeed()
+        public void Assert_property_with_approximation_succeeds()
         {
             // Arrange
             var actual = JToken.Parse("{ \"id\": 1.1232 }");
@@ -980,18 +980,19 @@ namespace FluentAssertions.Json.Specs
         }
 
         [Fact]
-        public void When_a_float_is_not_within_approximation_ContainSubtree_check_should_throw()
+        public void Can_assert_on_a_field_with_approximation()
         {
             // Arrange
             var actual = JToken.Parse("{ \"id\": 1.1232 }");
             var expected = JToken.Parse("{ \"id\": 1.1235 }");
 
-            // Act & Assert
-            actual.Should().
-                Invoking(x => x.ContainSubtree(expected, options => options
-                    .Using<double>(d => d.Subject.Should().BeApproximately(d.Expectation, 1e-5))
-                    .WhenTypeIs<double>()))
-                .Should().Throw<XunitException>()
+            // Act
+            Action act = () => actual.Should().ContainSubtree(expected, options => options
+                .Using<double>(d => d.Subject.Should().BeApproximately(d.Expectation, 1e-5))
+                .WhenTypeIs<double>());
+
+            // Assert
+            act.Should().Throw<XunitException>()
                 .WithMessage("JSON document has a different value at $.id.*");
         }
 
